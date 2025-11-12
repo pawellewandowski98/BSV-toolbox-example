@@ -23,13 +23,18 @@ func main() {
 	log = slog.Default()
 	network := defs.NetworkMainnet
 
-	_, provider := setupServer(network)
+	s, provider := setupServer(network)
 
-	alice, bob := utils.CreateWallets(provider, network)
+	alice, _ := utils.CreateWallets(provider, network)
 
+	// Step 1: Generate BRC29 address for Alice
+	generateAddress(alice)
+
+	// Step 2: Internalize transaction from faucet to Alice's wallet
 	//internalizeTx(s, alice, "299ac36833a5ffe6ae30e4d9fcebd6328a5fd4e6cae5dc4d18bda95adc1bbad1")
 
-	sendTx(alice, bob)
+	// Step 3: Send transaction from Alice to Bob
+	//sendTx(alice, bob)
 }
 
 func setupServer(network defs.BSVNetwork) (s *services.WalletServices, provider *storage.Provider) {
@@ -67,8 +72,7 @@ func setupServer(network defs.BSVNetwork) (s *services.WalletServices, provider 
 	return
 }
 
-func internalizeTx(s *services.WalletServices, side utils.WalletWithKeys, txID string) {
-
+func generateAddress(side utils.WalletWithKeys) {
 	keyID := brc29.KeyID{
 		DerivationPrefix: utils.DefaultBase64Prefix,
 		DerivationSuffix: utils.DefaultBase64Suffix,
@@ -88,7 +92,9 @@ func internalizeTx(s *services.WalletServices, side utils.WalletWithKeys, txID s
 	}
 
 	log.Info("Generated BRC29 address", "address", address.AddressString)
+}
 
+func internalizeTx(s *services.WalletServices, side utils.WalletWithKeys, txID string) {
 	txIDHash, err := chainhash.NewHashFromHex(txID)
 	if err != nil {
 		panic(fmt.Errorf("invalid txID: %w", err))
@@ -114,7 +120,7 @@ func internalizeTx(s *services.WalletServices, side utils.WalletWithKeys, txID s
 	}
 }
 
-func sendTx(sender, recipent utils.WalletWithKeys) {
+func sendTx(sender, recipient utils.WalletWithKeys) {
 	keyID := brc29.KeyID{
 		DerivationPrefix: utils.DefaultBase64Prefix,
 		DerivationSuffix: utils.DefaultBase64Suffix,
@@ -123,7 +129,7 @@ func sendTx(sender, recipent utils.WalletWithKeys) {
 	address, err := brc29.AddressForCounterparty(
 		sender.PrivKey,
 		keyID,
-		recipent.PubKey,
+		recipient.PubKey,
 		brc29.WithMainNet(),
 	)
 	if err != nil {
