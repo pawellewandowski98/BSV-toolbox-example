@@ -30,7 +30,7 @@ func main() {
 	s := wallet.CreateServices(_const.Network, &log.Logger)
 
 	// NOTE: Uncomment to generate BRC-29 address for transfer, send funds to it, and then internalize the TX
-	//address, err := tx.GenerateAddressForTransfer(aliceWallet.PrivKey)
+	//address, err := tx.GenerateAddressForTransfer(bobWallet.PrivKey)
 	//if err != nil {
 	//	log.Error("Failed to generate BRC-29 address", "error", err)
 	//	return
