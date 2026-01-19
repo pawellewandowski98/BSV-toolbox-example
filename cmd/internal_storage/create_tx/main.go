@@ -24,7 +24,7 @@ func main() {
 
 	log.Info("Wallets created successfully")
 
-	tx.Internalize(s, aliceWallet, _const.TxIDToInternalize, &log.Logger)
+	tx.Internalize(s, aliceWallet.Wallet, _const.TxIDToInternalize, &log.Logger)
 	//
 	//sendTx(alice, bob)
 

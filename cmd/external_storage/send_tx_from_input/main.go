@@ -49,23 +49,27 @@ func main() {
 	//txs := b.GetValidTxids()
 	//fmt.Println("Alice's outputs include transactions with the following TXIDs: ", txs)
 
+	amountToSend := uint64(200)
+
 	output := response.Outputs[0]
-	if output.Satoshis <= 1 {
+	if output.Satoshis < amountToSend {
 		for _, o := range response.Outputs {
 			fmt.Println("Checking output with satoshis:", o.Satoshis)
-			if o.Satoshis > 1 {
+			if o.Satoshis > amountToSend {
 				output = o
 				break
 			}
 		}
 
-		if output.Satoshis <= 1 {
-			log.Error("No suitable output with more than 1 satoshi found in Alice's wallet")
+		if output.Satoshis <= amountToSend {
+			log.Error("No suitable output with more than 100 satoshi found in Alice's wallet")
 			return
 		}
 	}
 
-	err = tx.SendTxWithInputWithExternalStorage(aliceWallet, bobWallet, response.BEEF, output, &log.Logger)
+	log.Info("Selected output for spending", "output", output)
+
+	err = tx.SendTxWithInputWithExternalStorage(aliceWallet, bobWallet, response.BEEF, output, amountToSend, &log.Logger)
 	if err != nil {
 		log.Error("Failed to send TX from Alice to Bob", "error", err)
 	}

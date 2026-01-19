@@ -3,8 +3,14 @@ package main
 import (
 	_const "SimpleScripts/const"
 	"SimpleScripts/internal/logger"
+	"SimpleScripts/internal/monitor"
 	"SimpleScripts/internal/storage"
 	"SimpleScripts/internal/tx"
+	"context"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"SimpleScripts/internal/wallet"
 )
 
@@ -20,6 +26,12 @@ func main() {
 		log.Error("Failed to create Alice and Bob wallets", "error", err)
 		return
 	}
+
+	_, cleanup, err := monitor.RunMonitor(context.Background(), provider, &log.Logger)
+
+	defer func() {
+		cleanup()
+	}()
 
 	log.Info("Wallets created successfully")
 
@@ -40,4 +52,8 @@ func main() {
 	}
 
 	log.Complete("WORKFLOW COMPLETED: all wallets are operational")
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
 }

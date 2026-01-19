@@ -15,11 +15,11 @@ import (
 	"github.com/go-softwarelab/common/pkg/to"
 )
 
-func SendTx(sender, recipient *wallet.WalletWithKeys, log *slog.Logger) error {
+func SendTx(sender, recipient *wallet.WalletWithKeys, amount uint64, log *slog.Logger) error {
 	address, err := brc29.AddressForCounterparty(
-		sender.PrivKey,
+		recipient.PrivKey,
 		_const.KeyID,
-		recipient.PubKey,
+		sender.PubKey,
 		brc29.WithMainNet(),
 	)
 	if err != nil {
@@ -40,14 +40,14 @@ func SendTx(sender, recipient *wallet.WalletWithKeys, log *slog.Logger) error {
 		Outputs: []sdkWallet.CreateActionOutput{
 			{
 				LockingScript:     lockingScript.Bytes(),
-				Satoshis:          uint64(1),
+				Satoshis:          amount,
 				OutputDescription: "Payment to BRC29 address",
 				Tags:              []string{"payment", "example"},
 			},
 		},
 		Labels: []string{"create_action_example"},
 		Options: &sdkWallet.CreateActionOptions{
-			AcceptDelayedBroadcast: to.Ptr(false),
+			AcceptDelayedBroadcast: to.Ptr(true),
 		},
 	}
 
@@ -71,7 +71,7 @@ func SendTx(sender, recipient *wallet.WalletWithKeys, log *slog.Logger) error {
 	return nil
 }
 
-func SendTxWithExternalStorage(sender, recipient *wallet.WalletForExternalStorageWithKeys, log *slog.Logger) error {
+func SendTxWithExternalStorage(sender, recipient *wallet.WalletForExternalStorageWithKeys, amount uint64, log *slog.Logger) error {
 	senderWalletWithKeys := &wallet.WalletWithKeys{
 		Wallet:  sender.Wallet,
 		PrivKey: sender.PrivKey,
@@ -84,14 +84,14 @@ func SendTxWithExternalStorage(sender, recipient *wallet.WalletForExternalStorag
 		PubKey:  recipient.PubKey,
 	}
 
-	err := SendTx(senderWalletWithKeys, recipientWalletWithKeys, log)
+	err := SendTx(senderWalletWithKeys, recipientWalletWithKeys, amount, log)
 	if err != nil {
 		return err
 	}
 
 	return nil
 }
-func SendTxWithInputWithExternalStorage(sender, recipient *wallet.WalletForExternalStorageWithKeys, inputBeef []byte, output sdkWallet.Output, log *slog.Logger) error {
+func SendTxWithInputWithExternalStorage(sender, recipient *wallet.WalletForExternalStorageWithKeys, inputBeef []byte, output sdkWallet.Output, amount uint64, log *slog.Logger) error {
 	senderWalletWithKeys := &wallet.WalletWithKeys{
 		Wallet:  sender.Wallet,
 		PrivKey: sender.PrivKey,
@@ -104,7 +104,7 @@ func SendTxWithInputWithExternalStorage(sender, recipient *wallet.WalletForExter
 		PubKey:  recipient.PubKey,
 	}
 
-	err := SendTxWithInput(senderWalletWithKeys, recipientWalletWithKeys, inputBeef, output, log)
+	err := SendTxWithInput(senderWalletWithKeys, recipientWalletWithKeys, inputBeef, output, amount, log)
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func SendTxWithInputWithExternalStorage(sender, recipient *wallet.WalletForExter
 	return nil
 }
 
-func SendTxWithInput(sender, recipient *wallet.WalletWithKeys, inputBeef []byte, output sdkWallet.Output, log *slog.Logger) error {
+func SendTxWithInput(sender, recipient *wallet.WalletWithKeys, inputBeef []byte, output sdkWallet.Output, amount uint64, log *slog.Logger) error {
 	//address, err := brc29.AddressForCounterparty(
 	//	sender.PrivKey,
 	//	_const.KeyID,
@@ -153,17 +153,17 @@ func SendTxWithInput(sender, recipient *wallet.WalletWithKeys, inputBeef []byte,
 		},
 		// old code
 		Description: "TX example",
-		Outputs: []sdkWallet.CreateActionOutput{
-			{
-				LockingScript:     lockingScript.Bytes(),
-				Satoshis:          uint64(1),
-				OutputDescription: "Payment to BRC29 address",
-				Tags:              []string{"payment", "example"},
-			},
-		},
+		//Outputs: []sdkWallet.CreateActionOutput{
+		//	{
+		//		LockingScript:     lockingScript.Bytes(),
+		//		Satoshis:          amount,
+		//		OutputDescription: "Payment to BRC29 address",
+		//		Tags:              []string{"payment", "example"},
+		//	},
+		//},
 		Labels: []string{"create_action_example"},
 		Options: &sdkWallet.CreateActionOptions{
-			AcceptDelayedBroadcast: to.Ptr(false),
+			AcceptDelayedBroadcast: to.Ptr(true),
 		},
 	}
 
@@ -207,7 +207,7 @@ func SendTxWithInput(sender, recipient *wallet.WalletWithKeys, inputBeef []byte,
 			},
 		},
 		Options: &sdkWallet.SignActionOptions{
-			AcceptDelayedBroadcast: to.Ptr(false),
+			AcceptDelayedBroadcast: to.Ptr(true),
 		},
 	}
 	sar, err := sender.Wallet.SignAction(context.Background(), signArgs, "test_originator")
