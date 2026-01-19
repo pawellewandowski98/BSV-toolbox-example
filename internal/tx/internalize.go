@@ -33,7 +33,7 @@ func Internalize(s *services.WalletServices, side *wallet.Wallet, txID string, l
 		panic(fmt.Errorf("failed to get atomic bytes for txID %s: %w", txID, err))
 	}
 
-	log.Info("Obtained atomic bytes successfully", "atomicBeef", atomicBeef)
+	log.Info("Obtained atomic bytes successfully")
 
 	err = InternalizeFromFaucet(context.Background(), atomicBeef, side)
 	if err != nil {

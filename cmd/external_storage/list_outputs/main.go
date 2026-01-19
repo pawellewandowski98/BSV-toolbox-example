@@ -46,7 +46,7 @@ func main() {
 		return
 	}
 
-	log.Info("Alice wallet outputs retrieved", "outputs", response)
+	log.Info("Alice wallet outputs retrieved", "outputs", response.Outputs)
 
 	b, err := transaction.NewBeefFromBytes(response.BEEF)
 	if err != nil {
@@ -67,7 +67,7 @@ func main() {
 		return
 	}
 
-	log.Info("Bob wallet outputs retrieved", "outputs", response)
+	log.Info("Bob wallet outputs retrieved", "outputs", response.Outputs)
 
 	b, err = transaction.NewBeefFromBytes(response.BEEF)
 	if err != nil {
