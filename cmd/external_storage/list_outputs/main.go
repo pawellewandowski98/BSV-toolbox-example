@@ -9,6 +9,7 @@ import (
 
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	sdkWallet "github.com/bsv-blockchain/go-sdk/wallet"
+	"github.com/go-softwarelab/common/pkg/to"
 )
 
 func main() {
@@ -40,6 +41,7 @@ func main() {
 
 	response, err = aliceWallet.Wallet.ListOutputs(context.Background(), sdkWallet.ListOutputsArgs{
 		Include: sdkWallet.OutputIncludeEntireTransactions,
+		Limit:   to.Ptr(uint32(100)),
 	}, "alice")
 	if err != nil {
 		log.Error("Failed to list outputs", "error", err)

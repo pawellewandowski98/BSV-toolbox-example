@@ -31,7 +31,7 @@ func main() {
 	//s := wallet.CreateServices(_const.Network, &log.Logger)
 	//tx.Internalize(s, aliceWallet.Wallet, _const.TxIDToInternalize, &log.Logger)
 
-	err = tx.SendTxWithExternalStorage(aliceWallet, bobWallet, 400, &log.Logger)
+	err = tx.SendTxWithExternalStorage(aliceWallet, bobWallet, 160, &log.Logger)
 	if err != nil {
 		log.Error("Failed to send TX from Alice to Bob", "error", err)
 		return

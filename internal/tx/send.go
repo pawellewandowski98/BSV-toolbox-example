@@ -9,26 +9,30 @@ import (
 	"log/slog"
 
 	"github.com/bsv-blockchain/go-sdk/transaction"
-	"github.com/bsv-blockchain/go-sdk/transaction/template/p2pkh"
 	sdkWallet "github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/bsv-blockchain/go-wallet-toolbox/pkg/brc29"
 	"github.com/go-softwarelab/common/pkg/to"
 )
 
 func SendTx(sender, recipient *wallet.WalletWithKeys, amount uint64, log *slog.Logger) error {
-	address, err := brc29.AddressForCounterparty(
-		recipient.PrivKey,
-		_const.KeyID,
-		sender.PubKey,
-		brc29.WithMainNet(),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to generate BRC29 address: %w", err)
-	}
+	//address, err := brc29.AddressForCounterparty(
+	//	sender.PrivKey,
+	//	_const.KeyID,
+	//	recipient.PubKey,
+	//	brc29.WithMainNet(),
+	//)
+	//if err != nil {
+	//	return fmt.Errorf("failed to generate BRC29 address: %w", err)
+	//}
+	//
+	//log.Info("Generated BRC29 address", "address", address.AddressString)
+	//
+	//lockingScript, err := p2pkh.Lock(address)
+	//if err != nil {
+	//	return fmt.Errorf("failed to create locking script: %w", err)
+	//}
 
-	log.Info("Generated BRC29 address", "address", address.AddressString)
-
-	lockingScript, err := p2pkh.Lock(address)
+	lockingScript, err := brc29.LockForCounterparty(sender.PrivKey, _const.KeyID, recipient.PubKey)
 	if err != nil {
 		return fmt.Errorf("failed to create locking script: %w", err)
 	}
@@ -40,7 +44,7 @@ func SendTx(sender, recipient *wallet.WalletWithKeys, amount uint64, log *slog.L
 		Outputs: []sdkWallet.CreateActionOutput{
 			{
 				LockingScript:     lockingScript.Bytes(),
-				Satoshis:          amount,
+				Satoshis:          50,
 				OutputDescription: "Payment to BRC29 address",
 				Tags:              []string{"payment", "example"},
 			},
@@ -91,7 +95,7 @@ func SendTxWithExternalStorage(sender, recipient *wallet.WalletForExternalStorag
 
 	return nil
 }
-func SendTxWithInputWithExternalStorage(sender, recipient *wallet.WalletForExternalStorageWithKeys, inputBeef []byte, output sdkWallet.Output, amount uint64, log *slog.Logger) error {
+func SendTxWithInputWithExternalStorage(sender, recipient *wallet.WalletForExternalStorageWithKeys, inputBeef []byte, outpoint transaction.Outpoint, amount uint64, log *slog.Logger) error {
 	senderWalletWithKeys := &wallet.WalletWithKeys{
 		Wallet:  sender.Wallet,
 		PrivKey: sender.PrivKey,
@@ -104,7 +108,7 @@ func SendTxWithInputWithExternalStorage(sender, recipient *wallet.WalletForExter
 		PubKey:  recipient.PubKey,
 	}
 
-	err := SendTxWithInput(senderWalletWithKeys, recipientWalletWithKeys, inputBeef, output, amount, log)
+	err := SendTxWithInput(senderWalletWithKeys, recipientWalletWithKeys, inputBeef, outpoint, amount, log)
 	if err != nil {
 		return err
 	}
@@ -112,7 +116,7 @@ func SendTxWithInputWithExternalStorage(sender, recipient *wallet.WalletForExter
 	return nil
 }
 
-func SendTxWithInput(sender, recipient *wallet.WalletWithKeys, inputBeef []byte, output sdkWallet.Output, amount uint64, log *slog.Logger) error {
+func SendTxWithInput(sender, recipient *wallet.WalletWithKeys, inputBeef []byte, outpoint transaction.Outpoint, amount uint64, log *slog.Logger) error {
 	//address, err := brc29.AddressForCounterparty(
 	//	sender.PrivKey,
 	//	_const.KeyID,
@@ -130,13 +134,20 @@ func SendTxWithInput(sender, recipient *wallet.WalletWithKeys, inputBeef []byte,
 	//	return fmt.Errorf("failed to create locking script: %w", err)
 	//}
 
-	lockingScript, err := brc29.LockForCounterparty(sender.PrivKey, _const.KeyID, recipient.PubKey)
-	if err != nil {
-		return fmt.Errorf("failed to create locking script: %w", err)
-	}
+	//lockingScript, err := brc29.LockForCounterparty(sender.PrivKey, _const.KeyID, recipient.PubKey)
+	//if err != nil {
+	//	return fmt.Errorf("failed to create locking script: %w", err)
+	//}
 
-	log.Info("Created locking script", "lockingScript", lockingScript)
+	//log.Info("Created locking script", "lockingScript", lockingScript)
 
+	// alice, bob
+	//unlocker, err := brc29.Unlock(sender.PubKey, _const.KeyID, recipient.PrivKey)
+	//if err != nil {
+	//	return fmt.Errorf("failed to create unlocker: %w", err)
+	//}
+
+	// bob, alice
 	unlocker, err := brc29.Unlock(sender.PubKey, _const.KeyID, recipient.PrivKey)
 	if err != nil {
 		return fmt.Errorf("failed to create unlocker: %w", err)
@@ -146,7 +157,7 @@ func SendTxWithInput(sender, recipient *wallet.WalletWithKeys, inputBeef []byte,
 		InputBEEF: inputBeef,
 		Inputs: []sdkWallet.CreateActionInput{
 			{
-				Outpoint:              output.Outpoint,
+				Outpoint:              outpoint,
 				InputDescription:      "funds source input",
 				UnlockingScriptLength: unlocker.EstimateLength(nil, 0),
 			},

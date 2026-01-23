@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bsv-blockchain/go-sdk/transaction"
 	sdkWallet "github.com/bsv-blockchain/go-sdk/wallet"
 )
 
@@ -27,6 +28,8 @@ func main() {
 		aliceWallet.Cleanup()
 		bobWallet.Cleanup()
 	}()
+
+	s := wallet.CreateServices(_const.Network, &log.Logger)
 
 	response, err := aliceWallet.Wallet.ListOutputs(context.Background(), sdkWallet.ListOutputsArgs{
 		Include: sdkWallet.OutputIncludeEntireTransactions,
@@ -49,27 +52,48 @@ func main() {
 	//txs := b.GetValidTxids()
 	//fmt.Println("Alice's outputs include transactions with the following TXIDs: ", txs)
 
-	amountToSend := uint64(200)
+	amountToSend := uint64(50)
 
-	output := response.Outputs[0]
-	if output.Satoshis < amountToSend {
-		for _, o := range response.Outputs {
-			fmt.Println("Checking output with satoshis:", o.Satoshis)
-			if o.Satoshis > amountToSend {
-				output = o
-				break
-			}
-		}
+	//output := response.Outputs[0]
+	//if output.Satoshis != amountToSend {
+	//	for _, o := range response.Outputs {
+	//		fmt.Println("Checking output with satoshis:", o.Satoshis)
+	//		if o.Satoshis == amountToSend {
+	//			output = o
+	//			break
+	//		}
+	//	}
+	//
+	//	if output.Satoshis != amountToSend {
+	//		log.Error("No suitable output with more than 100 satoshi found in Alice's wallet")
+	//		return
+	//	}
+	//}
 
-		if output.Satoshis <= amountToSend {
-			log.Error("No suitable output with more than 100 satoshi found in Alice's wallet")
-			return
-		}
+	// bob -> alice
+	txID := "6e6ce64085208bc9bb8dd30d8219d780bcf96461097ed6ffa1fb45c529a9fea3"
+
+	outpoint, err := transaction.OutpointFromString(txID + ".0")
+	if err != nil {
+		log.Error("failed to parse outpoint: %w", err)
+		return
 	}
 
-	log.Info("Selected output for spending", "output", output)
+	log.Info("Selected output for spending", "output", outpoint)
 
-	err = tx.SendTxWithInputWithExternalStorage(aliceWallet, bobWallet, response.BEEF, output, amountToSend, &log.Logger)
+	beef, err := s.GetBEEF(context.Background(), txID, nil)
+	if err != nil {
+		panic(fmt.Errorf("failed to get BEEF for txID %s: %w", txID, err))
+	}
+
+	beefBytes, err := beef.Bytes()
+	if err != nil {
+		log.Error("Failed to get beef bytes", "error", err)
+		return
+	}
+
+	// alice -> bob
+	err = tx.SendTxWithInputWithExternalStorage(aliceWallet, bobWallet, beefBytes, *outpoint, amountToSend, &log.Logger)
 	if err != nil {
 		log.Error("Failed to send TX from Alice to Bob", "error", err)
 	}

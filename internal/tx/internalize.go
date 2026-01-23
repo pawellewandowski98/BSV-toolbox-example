@@ -7,13 +7,14 @@ import (
 	"fmt"
 	"log/slog"
 
+	internalWallet "SimpleScripts/internal/wallet"
 	"github.com/bsv-blockchain/go-sdk/chainhash"
+	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	sdk "github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/bsv-blockchain/go-wallet-toolbox/pkg/services"
-	"github.com/bsv-blockchain/go-wallet-toolbox/pkg/wallet"
 )
 
-func Internalize(s *services.WalletServices, side *wallet.Wallet, txID string, log *slog.Logger) {
+func Internalize(s *services.WalletServices, side *internalWallet.WalletForExternalStorageWithKeys, txID string, log *slog.Logger) {
 	log.Info("Starting internalization process", "txID", txID)
 
 	txIDHash, err := chainhash.NewHashFromHex(txID)
@@ -35,10 +36,15 @@ func Internalize(s *services.WalletServices, side *wallet.Wallet, txID string, l
 
 	log.Info("Obtained atomic bytes successfully")
 
-	err = InternalizeFromFaucet(context.Background(), atomicBeef, side)
+	err = InternalizeFromFaucet(context.Background(), atomicBeef, side.Wallet)
 	if err != nil {
 		panic(fmt.Errorf("failed to internalize tx: %w", err))
 	}
+
+	//err = InternalizeFromWallet(context.Background(), atomicBeef, side.Wallet, side.PubKey)
+	//if err != nil {
+	//	panic(fmt.Errorf("failed to internalize tx: %w", err))
+	//}
 }
 
 // DerivationBytesResult represents the result of derivation bytes calculation
@@ -85,6 +91,46 @@ func DerivationParts() *sdk.Payment {
 		DerivationPrefix:  bytes.DerivationPrefix,
 		DerivationSuffix:  bytes.DerivationSuffix,
 		SenderIdentityKey: publicKey,
+	}
+
+	return paymentRemittance
+}
+
+// InternalizeFromFaucet is a helper function to internalize a transaction from the faucet
+func InternalizeFromWallet(ctx context.Context, atomicBeefBytes []byte, wallet sdk.Interface, receiver *ec.PublicKey) error {
+	paymentRemittance := DerivationPartsFromWallet(receiver)
+
+	internalizeArgs := sdk.InternalizeActionArgs{
+		Tx: atomicBeefBytes,
+		Outputs: []sdk.InternalizeOutput{
+			{
+				OutputIndex:       0,
+				Protocol:          "wallet payment",
+				PaymentRemittance: paymentRemittance,
+			},
+		},
+		Description: "internalize from faucet",
+	}
+
+	iar, err := wallet.InternalizeAction(ctx, internalizeArgs, "originator")
+	if err != nil {
+		return fmt.Errorf("failed to internalize action: %w", err)
+	}
+
+	fmt.Printf("InternalizeAction successful: %+v\n", *iar)
+
+	return nil
+}
+
+// DerivationParts creates derivation parts with default prefix and suffix
+func DerivationPartsFromWallet(sender *ec.PublicKey) *sdk.Payment {
+
+	bytes := derivationBytes(_const.DefaultBase64Prefix, _const.DefaultBase64Suffix)
+
+	paymentRemittance := &sdk.Payment{
+		DerivationPrefix:  bytes.DerivationPrefix,
+		DerivationSuffix:  bytes.DerivationSuffix,
+		SenderIdentityKey: sender,
 	}
 
 	return paymentRemittance
