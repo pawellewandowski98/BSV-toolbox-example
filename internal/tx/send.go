@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	sdkWallet "github.com/bsv-blockchain/go-sdk/wallet"
@@ -32,6 +33,7 @@ func SendTx(sender, recipient *wallet.WalletWithKeys, amount uint64, log *slog.L
 	//	return fmt.Errorf("failed to create locking script: %w", err)
 	//}
 
+	// alice ,bob
 	lockingScript, err := brc29.LockForCounterparty(sender.PrivKey, _const.KeyID, recipient.PubKey)
 	if err != nil {
 		return fmt.Errorf("failed to create locking script: %w", err)
@@ -39,12 +41,15 @@ func SendTx(sender, recipient *wallet.WalletWithKeys, amount uint64, log *slog.L
 
 	log.Info("Created locking script", "lockingScript", lockingScript)
 
+	//reference := fmt.Sprintf("send_%d_sats_to_%s_at_%s", amount, recipient.PubKey.ToDERHex(), time.Now().Format(time.RFC3339))
+	reference := fmt.Sprintf("random_reference_%d", time.Now().UnixNano())
+
 	createArgs := sdkWallet.CreateActionArgs{
 		Description: "TX example",
 		Outputs: []sdkWallet.CreateActionOutput{
 			{
 				LockingScript:     lockingScript.Bytes(),
-				Satoshis:          50,
+				Satoshis:          amount,
 				OutputDescription: "Payment to BRC29 address",
 				Tags:              []string{"payment", "example"},
 			},
@@ -52,7 +57,9 @@ func SendTx(sender, recipient *wallet.WalletWithKeys, amount uint64, log *slog.L
 		Labels: []string{"create_action_example"},
 		Options: &sdkWallet.CreateActionOptions{
 			AcceptDelayedBroadcast: to.Ptr(true),
+			RandomizeOutputs:       to.Ptr(false),
 		},
+		Reference: &reference,
 	}
 
 	log.Info("Creating transaction to send 1 satoshi", "description", createArgs.Description)
@@ -147,8 +154,13 @@ func SendTxWithInput(sender, recipient *wallet.WalletWithKeys, inputBeef []byte,
 	//	return fmt.Errorf("failed to create unlocker: %w", err)
 	//}
 
+	lockingScript, err := brc29.LockForCounterparty(sender.PrivKey, _const.KeyID, recipient.PubKey)
+	if err != nil {
+		return fmt.Errorf("failed to create locking script: %w", err)
+	}
+
 	// bob, alice
-	unlocker, err := brc29.Unlock(sender.PubKey, _const.KeyID, recipient.PrivKey)
+	unlocker, err := brc29.Unlock(recipient.PubKey, _const.KeyID, sender.PrivKey)
 	if err != nil {
 		return fmt.Errorf("failed to create unlocker: %w", err)
 	}
@@ -164,17 +176,18 @@ func SendTxWithInput(sender, recipient *wallet.WalletWithKeys, inputBeef []byte,
 		},
 		// old code
 		Description: "TX example",
-		//Outputs: []sdkWallet.CreateActionOutput{
-		//	{
-		//		LockingScript:     lockingScript.Bytes(),
-		//		Satoshis:          amount,
-		//		OutputDescription: "Payment to BRC29 address",
-		//		Tags:              []string{"payment", "example"},
-		//	},
-		//},
+		Outputs: []sdkWallet.CreateActionOutput{
+			{
+				LockingScript:     lockingScript.Bytes(),
+				Satoshis:          amount,
+				OutputDescription: "Payment to BRC29 address",
+				Tags:              []string{"payment", "example"},
+			},
+		},
 		Labels: []string{"create_action_example"},
 		Options: &sdkWallet.CreateActionOptions{
 			AcceptDelayedBroadcast: to.Ptr(true),
+			RandomizeOutputs:       to.Ptr(false),
 		},
 	}
 

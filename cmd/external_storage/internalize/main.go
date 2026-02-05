@@ -47,10 +47,10 @@ func main() {
 	log.Info("Bob address for transfers", "address", address.AddressString)
 
 	for _, id := range _const.AliceTxIDsToInternalize {
-		tx.Internalize(s, aliceWallet, id, &log.Logger)
+		tx.Internalize(s, aliceWallet.Wallet, id, &log.Logger)
 	}
 	for _, id := range _const.BobTxIDsToInternalize {
-		tx.Internalize(s, bobWallet, id, &log.Logger)
+		tx.Internalize(s, bobWallet.Wallet, id, &log.Logger)
 	}
 
 	//tx.Internalize(s, bobWallet, "01a2f814bd6a09abc150129f81a9ae548c0a978e69e7e6d6c32ce34dcf303213", &log.Logger)

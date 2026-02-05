@@ -12,12 +12,15 @@ import (
 	"github.com/bsv-blockchain/go-wallet-toolbox/pkg/wdk"
 )
 
-func CreateInternal(network defs.BSVNetwork, storageKey string, log *slog.Logger) (*services.WalletServices, *storage.Provider, error) {
+func CreateInternal(network defs.BSVNetwork, storageKey string, onTxBroadcasted chan defs.TransactionStatusUpdate, log *slog.Logger) (*services.WalletServices, *storage.Provider, error) {
 	s := wallet.CreateServices(network, log)
 
 	log.Info("Creating storage provider...", "network", network)
 
-	provider, err := storage.NewGORMProvider(network, s)
+	provider, err := storage.NewGORMProvider(network, s, storage.WithFeeModel(defs.FeeModel{
+		Type:  defs.SatPerKB,
+		Value: 100,
+	}), storage.WithBackgroundBroadcasterChannel(onTxBroadcasted))
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create storage provider: %w", err)
 	}

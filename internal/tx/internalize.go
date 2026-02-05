@@ -7,14 +7,14 @@ import (
 	"fmt"
 	"log/slog"
 
-	internalWallet "SimpleScripts/internal/wallet"
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	sdk "github.com/bsv-blockchain/go-sdk/wallet"
 	"github.com/bsv-blockchain/go-wallet-toolbox/pkg/services"
+	"github.com/bsv-blockchain/go-wallet-toolbox/pkg/wallet"
 )
 
-func Internalize(s *services.WalletServices, side *internalWallet.WalletForExternalStorageWithKeys, txID string, log *slog.Logger) {
+func Internalize(s *services.WalletServices, side *wallet.Wallet, txID string, log *slog.Logger) {
 	log.Info("Starting internalization process", "txID", txID)
 
 	txIDHash, err := chainhash.NewHashFromHex(txID)
@@ -36,7 +36,7 @@ func Internalize(s *services.WalletServices, side *internalWallet.WalletForExter
 
 	log.Info("Obtained atomic bytes successfully")
 
-	err = InternalizeFromFaucet(context.Background(), atomicBeef, side.Wallet)
+	err = InternalizeFromFaucet(context.Background(), atomicBeef, side)
 	if err != nil {
 		panic(fmt.Errorf("failed to internalize tx: %w", err))
 	}

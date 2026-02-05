@@ -52,7 +52,7 @@ func main() {
 	//txs := b.GetValidTxids()
 	//fmt.Println("Alice's outputs include transactions with the following TXIDs: ", txs)
 
-	amountToSend := uint64(50)
+	amountToSend := uint64(10)
 
 	//output := response.Outputs[0]
 	//if output.Satoshis != amountToSend {
@@ -71,7 +71,7 @@ func main() {
 	//}
 
 	// bob -> alice
-	txID := "6e6ce64085208bc9bb8dd30d8219d780bcf96461097ed6ffa1fb45c529a9fea3"
+	txID := "388d77343fa4940eaf9c79ce9c3b266cddd4e14f2392ac586a2fe6a28bd35a84"
 
 	outpoint, err := transaction.OutpointFromString(txID + ".0")
 	if err != nil {
@@ -93,7 +93,7 @@ func main() {
 	}
 
 	// alice -> bob
-	err = tx.SendTxWithInputWithExternalStorage(aliceWallet, bobWallet, beefBytes, *outpoint, amountToSend, &log.Logger)
+	err = tx.SendTxWithInputWithExternalStorage(bobWallet, aliceWallet, beefBytes, *outpoint, amountToSend, &log.Logger)
 	if err != nil {
 		log.Error("Failed to send TX from Alice to Bob", "error", err)
 	}

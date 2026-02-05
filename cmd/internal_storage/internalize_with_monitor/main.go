@@ -19,7 +19,9 @@ func main() {
 
 	log.Start("STARTING WORKFLOW: internalize TX in internal storage")
 
-	s, provider, err := storage.CreateInternal(_const.Network, _const.ServerPrivateKeyHex, &log.Logger)
+	onTxBroadcasted, onTxProven := monitor.PrepareChannels(100)
+
+	s, provider, err := storage.CreateInternal(_const.Network, _const.ServerPrivateKeyHex, onTxBroadcasted, &log.Logger)
 
 	aliceWallet, bobWallet, err := wallet.CreateAliceAndBobWallets(provider, _const.Network)
 	if err != nil {
@@ -27,7 +29,7 @@ func main() {
 		return
 	}
 
-	_, cleanup, err := monitor.RunMonitor(context.Background(), provider, &log.Logger)
+	_, cleanup, err := monitor.RunMonitor(context.Background(), provider, onTxBroadcasted, onTxProven, &log.Logger)
 
 	defer func() {
 		cleanup()

@@ -15,11 +15,11 @@ import (
 func RunMonitor(
 	ctx context.Context,
 	storage *storage.Provider,
+	onTxBroadcasted, onTxProven chan defs.TransactionStatusUpdate,
 	logger *slog.Logger,
 ) (daemon *monitor.Daemon, cleanup func(), err error) {
-	onTxBroadcasted, onTxProven := prepareChannels(100)
 
-	opts := []monitor.DaemonCommunicationOption{
+	opts := []monitor.DaemonEventOption{
 		monitor.WithBroadcastedTxChannel(onTxBroadcasted),
 		monitor.WithProvenTxChannel(onTxProven),
 	}
@@ -72,33 +72,33 @@ func RunMonitor(
 	}, nil
 }
 
-func prepareChannels(capacity int) (txBroadcastedCh, txProvenCh chan defs.MonitorTaskResponse) {
-	txBroadcastedCh = make(chan defs.MonitorTaskResponse, capacity)
-	txProvenCh = make(chan defs.MonitorTaskResponse, capacity)
+func PrepareChannels(capacity int) (txBroadcastedCh, txProvenCh chan defs.TransactionStatusUpdate) {
+	txBroadcastedCh = make(chan defs.TransactionStatusUpdate, capacity)
+	txProvenCh = make(chan defs.TransactionStatusUpdate, capacity)
 
 	return
 }
 
-func consumeTxBroadcasted(channel chan defs.MonitorTaskResponse, logger *slog.Logger) {
+func consumeTxBroadcasted(channel chan defs.TransactionStatusUpdate, logger *slog.Logger) {
 	for msg := range channel {
 		fmt.Println("<---------------------------- BROADCASTED")
 		fmt.Println("MSG: ", msg)
 		logger.Info(
 			"new tx broadcasted",
 			slog.String("tx_id", msg.TxID),
-			slog.String("status", msg.Status),
+			slog.String("status", msg.Status.String()),
 		)
 	}
 }
 
-func consumeTxProven(channel chan defs.MonitorTaskResponse, logger *slog.Logger) {
+func consumeTxProven(channel chan defs.TransactionStatusUpdate, logger *slog.Logger) {
 	for msg := range channel {
 		fmt.Println("<---------------------------- PROVEN")
 		fmt.Println("MSG: ", msg)
 		logger.Info(
 			"new tx proven",
 			slog.String("tx_id", msg.TxID),
-			slog.String("status", msg.Status),
+			slog.String("status", msg.Status.String()),
 		)
 	}
 }

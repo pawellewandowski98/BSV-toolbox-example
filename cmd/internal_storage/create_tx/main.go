@@ -3,8 +3,13 @@ package main
 import (
 	_const "SimpleScripts/const"
 	"SimpleScripts/internal/logger"
+	"SimpleScripts/internal/monitor"
 	"SimpleScripts/internal/storage"
 	"SimpleScripts/internal/tx"
+	"context"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"SimpleScripts/internal/wallet"
 )
@@ -12,36 +17,37 @@ import (
 func main() {
 	log := logger.New()
 
-	log.Start("STARTING WORKFLOW: internalize TX in internal storage")
+	log.Start("STARTING WORKFLOW: create TX in internal storage")
 
-	s, provider, err := storage.CreateInternal(_const.Network, _const.ServerPrivateKeyHex, &log.Logger)
+	onTxBroadcasted, onTxProven := monitor.PrepareChannels(100)
 
-	aliceWallet, _, err := wallet.CreateAliceAndBobWallets(provider, _const.Network)
+	_, provider, err := storage.CreateInternal(_const.Network, _const.ServerPrivateKeyHex, onTxBroadcasted, &log.Logger)
+
+	aliceWallet, bobWallet, err := wallet.CreateAliceAndBobWallets(provider, _const.Network)
 	if err != nil {
 		log.Error("Failed to create Alice and Bob wallets", "error", err)
 		return
 	}
 
+	_, cleanup, err := monitor.RunMonitor(context.Background(), provider, onTxBroadcasted, onTxProven, &log.Logger)
+
+	defer func() {
+		cleanup()
+	}()
+
 	log.Info("Wallets created successfully")
 
-	tx.Internalize(s, aliceWallet.Wallet, _const.TxIDToInternalize, &log.Logger)
-	//
-	//sendTx(alice, bob)
-
-	//key, _ := primitives.PrivateKeyFromHex("143ab18a84d3b25e1a13cefa90038411e5d2014590a2a4a57263d1593c8dee1c")
-	//
-	//fmt.Println(key.Hex())
-	//fmt.Println(key.Wif())
-	//
-	//key2, _ := bip32.NewKeyFromString("xprv9s21ZrQH143K2stnKknNEck8NZ9buundyjYCGFGS31bwApaGp7oviHYVY9YAogmgvFC8EdsbsDReydnhDXrRrSXoNoMZczV9t4oPQREAmQ3")
-	//
-	//priv, _ := key2.ECPrivKey()
-	//fmt.Println(key2.String())
-	//fmt.Println(priv.Hex())
-
-	//alice.Wallet.ListOutputs(context.Background(), sdkWallet.ListOutputsArgs{}, "test")
+	err = tx.SendTx(aliceWallet, bobWallet, 1, &log.Logger)
+	if err != nil {
+		log.Error("Failed to send TX from Alice to Bob", "error", err)
+		return
+	}
 
 	log.Complete("WORKFLOW COMPLETED: all wallets are operational")
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
 }
 
 //
